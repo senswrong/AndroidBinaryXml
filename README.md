@@ -7,4 +7,4 @@
     <img alt="GitHub forks" src="https://img.shields.io/github/forks/senswrong/AndroidManifest?style=flat-square">
 </p>
 
-![image](https://github.com/senswrong/AndroidManifest/AndroidManifest.png)
+![image](https://raw.githubusercontent.com/senswrong/AndroidManifest/main/AndroidManifest.png)
