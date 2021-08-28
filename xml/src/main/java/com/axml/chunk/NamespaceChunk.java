@@ -15,10 +15,11 @@ public class NamespaceChunk extends BaseContentChunk {
     public final int prefix;
     public final int uri;
 
-    public NamespaceChunk(ByteBuffer byteBuffer) {
-        super(byteBuffer);
+    public NamespaceChunk(ByteBuffer byteBuffer, StringChunk stringChunk) {
+        super(byteBuffer, stringChunk);
         this.prefix = byteBuffer.getInt();
         this.uri = byteBuffer.getInt();
+        byteBuffer.position(ChunkStartPosition + chunkSize);
     }
 
     @Override
@@ -33,8 +34,12 @@ public class NamespaceChunk extends BaseContentChunk {
 
     @Override
     public String toString() {
-        return chunkType == ChunkType.CHUNK_START_NAMESPACE.TYPE ?//Start Namespace
-                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-                : "";
+        if (chunkType == ChunkType.CHUNK_START_NAMESPACE.TYPE) {
+            StringBuilder tagBuilder = new StringBuilder();
+            if (comment > -1) tagBuilder.append("<!--").append(getString(comment)).append("-->").append("\n");
+            tagBuilder.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+            return tagBuilder.toString();
+        }
+        return "";
     }
 }

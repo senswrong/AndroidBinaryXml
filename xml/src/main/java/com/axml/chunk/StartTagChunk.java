@@ -17,52 +17,64 @@ import java.util.List;
 public class StartTagChunk extends BaseContentChunk {
     public final int namespaceUri;
     public final int name;
-    public final int flags;
-    public int attributeCount;
-    public final int classAttribute;
-    public List<Attribute> attributes;
 
-    private final StringChunk stringChunk;
-    private final List<NamespaceChunk> namespaceChunkList;
+    public short attributeStart;
+    public short attributeSize;
+    public short attributeCount;
+    public short idIndex;
+    public short classIndex;
+    public short styleIndex;
+
+    public List<Attribute> attributes;
+    protected final List<NamespaceChunk> namespaceChunkList;
 
     public StartTagChunk(ByteBuffer byteBuffer, StringChunk stringChunk, List<NamespaceChunk> namespaceChunkList) {
-        super(byteBuffer);
+        super(byteBuffer, stringChunk);
         namespaceUri = byteBuffer.getInt();
         name = byteBuffer.getInt();
-        flags = byteBuffer.getInt();
-        attributeCount = byteBuffer.getInt();
-        classAttribute = byteBuffer.getInt();
+        attributeStart = byteBuffer.getShort();
+        attributeSize = byteBuffer.getShort();
+        attributeCount = byteBuffer.getShort();
+        idIndex = byteBuffer.getShort();
+        classIndex = byteBuffer.getShort();
+        styleIndex = byteBuffer.getShort();
 
         attributes = new ArrayList<>(attributeCount);
         for (int i = 0; i < attributeCount; i++)
             attributes.add(new Attribute(byteBuffer));
 
-        this.stringChunk = stringChunk;
         this.namespaceChunkList = namespaceChunkList;
+        byteBuffer.position(ChunkStartPosition + chunkSize);
     }
 
     public static class Attribute {
         public final int namespaceUri;
         public final int name;
         public final int value;
-        public final int type;
+        public final short structureSize;
+        public final byte Res0;
+        public final byte type;
         public final int data;
 
         public Attribute(ByteBuffer byteBuffer) {
             namespaceUri = byteBuffer.getInt();
             name = byteBuffer.getInt();
             value = byteBuffer.getInt();
-            type = byteBuffer.getInt() >> 24;
+            structureSize = byteBuffer.getShort();
+            Res0 = byteBuffer.get();
+            type = byteBuffer.get();
             data = byteBuffer.getInt();
         }
-        
+
         protected void toBytes(ByteArrayOutputStream stream) throws IOException {
             ByteBuffer byteBuffer = ByteBuffer.allocate(5 * 4);
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
             byteBuffer.putInt(namespaceUri);
             byteBuffer.putInt(name);
             byteBuffer.putInt(value);
-            byteBuffer.putInt(type << 24);
+            byteBuffer.putShort(structureSize);
+            byteBuffer.put(Res0);
+            byteBuffer.put(type);
             byteBuffer.putInt(data);
             stream.write(byteBuffer.array());
         }
@@ -71,41 +83,40 @@ public class StartTagChunk extends BaseContentChunk {
     @Override
     protected void toBytes(ByteArrayOutputStream stream) throws IOException {
         super.toBytes(stream);
-        this.attributeCount = attributes.size();
+        this.attributeCount = (short) attributes.size();
         ByteBuffer byteBuffer = ByteBuffer.allocate(5 * 4);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byteBuffer.putInt(namespaceUri);
         byteBuffer.putInt(name);
-        byteBuffer.putInt(flags);
-        byteBuffer.putInt(attributeCount);
-        byteBuffer.putInt(classAttribute);
+        byteBuffer.putShort(attributeStart);
+        byteBuffer.putShort(attributeSize);
+        byteBuffer.putShort(attributeCount);
+        byteBuffer.putShort(idIndex);
+        byteBuffer.putShort(classIndex);
+        byteBuffer.putShort(styleIndex);
         stream.write(byteBuffer.array());
         for (Attribute attribute : attributes)
             attribute.toBytes(stream);
     }
 
-    private String getPrefix(int uri) {
+    protected String getPrefix(int uri) {
         for (NamespaceChunk namespaceChunk : namespaceChunkList)
             if (namespaceChunk.uri == uri)
                 return getString(namespaceChunk.prefix);
         return null;
     }
 
-    public String getString(int index) {
-        if (index == -1) return "";
-        return stringChunk.getString(index);
-    }
-
     @Override
     public String toString() {
-        if (stringChunk == null || namespaceChunkList == null) return "";
-        StringBuilder tagBuilder = new StringBuilder("<");
+        StringBuilder tagBuilder = new StringBuilder();
+        if (comment > -1) tagBuilder.append("<!--").append(getString(comment)).append("-->").append("\n");
+        tagBuilder.append('<');
         //always = -1
-        if (namespaceUri != -1) tagBuilder.append(getPrefix(namespaceUri)).append(":");
+        if (namespaceUri > -1) tagBuilder.append(getPrefix(namespaceUri)).append(":");
 
         String tagName = getString(name);
         tagBuilder.append(tagName);
-        if ("manifest".equals(tagName))//add namespace
+        if (namespaceChunkList != null && "manifest".equals(tagName))//add namespace
             for (NamespaceChunk namespaceChunk : namespaceChunkList)
                 tagBuilder.append(" ").append("xmlns:").append(getString(namespaceChunk.prefix)).append("=\"").append(getString(namespaceChunk.uri)).append('"');
 

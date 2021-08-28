@@ -1,5 +1,7 @@
 package com.axml.chunk.base;
 
+import com.axml.chunk.StringChunk;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,12 +12,16 @@ import java.nio.ByteOrder;
  */
 public class BaseContentChunk extends BaseChunk {
     public final int lineNumber;
-    public final int unknown;
+    public final int comment;
 
-    public BaseContentChunk(ByteBuffer byteBuffer) {
+    protected final StringChunk stringChunk;
+
+    public BaseContentChunk(ByteBuffer byteBuffer, StringChunk stringChunk) {
         super(byteBuffer);
         lineNumber = byteBuffer.getInt();
-        unknown = byteBuffer.getInt();
+        comment = byteBuffer.getInt();
+
+        this.stringChunk = stringChunk;
     }
 
     @Override
@@ -23,7 +29,13 @@ public class BaseContentChunk extends BaseChunk {
         ByteBuffer byteBuffer = ByteBuffer.allocate(8);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byteBuffer.putInt(this.lineNumber);
-        byteBuffer.putInt(this.unknown);
+        byteBuffer.putInt(this.comment);
         stream.write(byteBuffer.array());
     }
+
+    protected String getString(int index) {
+        if (index == -1) return "";
+        return stringChunk.getString(index);
+    }
+
 }

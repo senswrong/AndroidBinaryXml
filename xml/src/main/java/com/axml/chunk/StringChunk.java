@@ -1,6 +1,7 @@
 package com.axml.chunk;
 
 import com.axml.chunk.base.BaseChunk;
+import common.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,28 +14,26 @@ import java.util.List;
  * Created by Sens on 2021/8/27.
  */
 public class StringChunk extends BaseChunk {
-    public final int stringCount;
-    public final int styleCount;
-    public final int unknow;
-    public final int stringPoolOffset;
-    public final int stylePoolOffset;
+    public int stringCount;
+    public int styleCount;
+    public boolean isUTF8;
+    public boolean isSorted;
+    public int stringStart;
+    public int styleStart;
 
-    public final int[] stringOffsets;
-    public final int[] styleOffsets;
+    public int[] stringOffsets;
+    public int[] styleOffsets;
 
-    public final List<String> stringList;
-
-    public String getString(int index) {
-        return stringList.get(index);
-    }
+    public List<String> stringList;
 
     public StringChunk(ByteBuffer byteBuffer) {
         super(byteBuffer);
         this.stringCount = byteBuffer.getInt();
         this.styleCount = byteBuffer.getInt();
-        this.unknow = byteBuffer.getInt();
-        this.stringPoolOffset = byteBuffer.getInt();
-        this.stylePoolOffset = byteBuffer.getInt();
+        this.isUTF8 = byteBuffer.getShort() == 1;
+        this.isSorted = byteBuffer.getShort() == 1;
+        this.stringStart = byteBuffer.getInt();
+        this.styleStart = byteBuffer.getInt();
 
         stringOffsets = new int[stringCount];
         for (int i = 0; i < stringOffsets.length; i++)
@@ -47,16 +46,15 @@ public class StringChunk extends BaseChunk {
         stringList = new ArrayList<>(stringCount);
 
         for (int i = 0; i < stringCount; i++) {
-            byteBuffer.position(ChunkStartPosition + stringPoolOffset + stringOffsets[i]);
-            char strLength = byteBuffer.getChar();
-            char[] strs = new char[strLength];
-            for (char j = 0; j < strLength; j++)
-                strs[j] = byteBuffer.getChar();
-            stringList.add(new String(strs));
+            byteBuffer.position(ChunkStartPosition + stringStart + stringOffsets[i]);
+            char length = byteBuffer.getChar();
+            char[] string = new char[length];
+            for (char j = 0; j < length; j++)
+                string[j] = byteBuffer.getChar();
+            stringList.add(new String(string));
         }
-        //final separator
-        byteBuffer.getChar();
-        //styleCount always = 0  break
+        //styleCount always = 0  [skip]
+        byteBuffer.position(ChunkStartPosition + chunkSize);
     }
 
     private void stringToBytes(ByteArrayOutputStream stream, String str) throws IOException {
@@ -71,16 +69,30 @@ public class StringChunk extends BaseChunk {
         stream.write(byteBuffer.array());
     }
 
+    public String getString(int index) {
+        return stringList.get(index);
+    }
+
     @Override
     protected void toBytes(ByteArrayOutputStream stream) throws IOException {
+        stringCount = stringList.size();
         ByteBuffer byteBuffer = ByteBuffer.allocate(5 * 4 + stringOffsets.length * 4 + styleOffsets.length * 4);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byteBuffer.putInt(stringList.size());
+        byteBuffer.putInt(stringCount);
         byteBuffer.putInt(styleCount);
-        byteBuffer.putInt(unknow);
-        byteBuffer.putInt(stringPoolOffset);
-        byteBuffer.putInt(stylePoolOffset);
-        for (int offset : stringOffsets) byteBuffer.putInt(offset);
+        byteBuffer.putShort((short) (isUTF8 ? 1 : 0));
+        byteBuffer.putShort((short) (isSorted ? 1 : 0));
+        byteBuffer.putInt(stringStart);
+        byteBuffer.putInt(styleStart);
+        int stringOffset = 0;
+        if (stringOffsets.length != stringCount)
+            stringOffsets = new int[stringCount];
+        for (int i = 0; i < stringCount; i++) {
+            stringOffsets[i] = stringOffset;
+            byteBuffer.putInt(stringOffset);
+            stringOffset += 4 + stringList.get(i).length() * 2;
+        }
+        //styleCount always = 0  [skip]
         for (int offset : styleOffsets) byteBuffer.putInt(offset);
         stream.write(byteBuffer.array());
         for (String str : stringList)

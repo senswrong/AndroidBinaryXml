@@ -14,21 +14,22 @@ import java.util.List;
  * Used system resource ID [android.R.**]
  */
 public class ResourceChunk extends BaseChunk {
-    public final List<Integer> IDList;
+    public final List<Integer> resourceIDs;
 
     public ResourceChunk(ByteBuffer byteBuffer) {
         super(byteBuffer);
         int idCount = chunkSize / 4 - 2;
-        IDList = new ArrayList<>(idCount);
+        resourceIDs = new ArrayList<>(idCount);
         for (int i = 0; i < idCount; i++)
-            IDList.add(byteBuffer.getInt());
+            resourceIDs.add(byteBuffer.getInt());
+        byteBuffer.position(ChunkStartPosition + chunkSize);
     }
 
     @Override
     protected void toBytes(ByteArrayOutputStream stream) throws IOException {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(IDList.size() * 4);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(resourceIDs.size() * 4);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        for (Integer integer : IDList)
+        for (Integer integer : resourceIDs)
             byteBuffer.putInt(integer);
         stream.write(byteBuffer.array());
     }

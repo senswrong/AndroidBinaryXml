@@ -18,7 +18,8 @@ import java.util.List;
  * {@see <a href="https://github.com/senswrong/AndroidManifest">AndroidManifest</a>}
  */
 public class AndroidManifest {
-    public int MANIFEST_MAGIC;
+    public short fileType;
+    public short headerSize;
     public int fileSize;
     public StringChunk stringChunk;
     public ResourceChunk resourceChunk;
@@ -32,11 +33,12 @@ public class AndroidManifest {
         int available = datas.length;
         ByteBuffer byteBuffer = ByteBuffer.wrap(datas);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        MANIFEST_MAGIC = byteBuffer.getInt();
+        fileType = byteBuffer.getShort();
+        headerSize = byteBuffer.getShort();
         fileSize = byteBuffer.getInt();
         List<NamespaceChunk> namespaceChunkList = new ArrayList<>();
         while (byteBuffer.position() < available) {
-            int Type = byteBuffer.getInt();
+            short Type = byteBuffer.getShort();
             ChunkType chunkType = ChunkType.valueOf(Type);
             if (chunkType == null) break;
             switch (chunkType) {
@@ -47,7 +49,7 @@ public class AndroidManifest {
                     resourceChunk = new ResourceChunk(byteBuffer);
                     break;
                 case CHUNK_START_NAMESPACE:
-                    NamespaceChunk namespaceChunk = new NamespaceChunk(byteBuffer);
+                    NamespaceChunk namespaceChunk = new NamespaceChunk(byteBuffer, stringChunk);
                     namespaceChunkList.add(namespaceChunk);
                     structList.add(namespaceChunk);
                     break;
@@ -55,10 +57,10 @@ public class AndroidManifest {
                     structList.add(new StartTagChunk(byteBuffer, stringChunk, namespaceChunkList));
                     break;
                 case CHUNK_END_TAG:
-                    structList.add(new EndTagChunk(byteBuffer, stringChunk, namespaceChunkList));
+                    structList.add(new EndTagChunk(byteBuffer, stringChunk));
                     break;
                 case CHUNK_END_NAMESPACE:
-                    structList.add(new NamespaceChunk(byteBuffer));
+                    structList.add(new NamespaceChunk(byteBuffer, stringChunk));
                     break;
             }
         }
@@ -66,14 +68,15 @@ public class AndroidManifest {
 
     public byte[] toBytes() throws IOException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        stream.write(stringChunk.toBytes());
-        stream.write(resourceChunk.toBytes());
+        if (stringChunk != null) stream.write(stringChunk.toBytes());
+        if (resourceChunk != null) stream.write(resourceChunk.toBytes());
         for (BaseChunk chunk : structList)
             stream.write(chunk.toBytes());
         fileSize = 8 + stream.size();
         ByteBuffer byteBuffer = ByteBuffer.allocate(fileSize);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byteBuffer.putInt(MANIFEST_MAGIC);
+        byteBuffer.putShort(fileType);
+        byteBuffer.putShort(headerSize);
         byteBuffer.putInt(fileSize);
         byteBuffer.put(stream.toByteArray());
         return byteBuffer.array();
@@ -81,7 +84,6 @@ public class AndroidManifest {
 
     @Override
     public String toString() {
-        if (stringChunk == null || resourceChunk == null) return "WRONG!!!";
         StringBuilder sb = new StringBuilder();
         for (BaseChunk baseChunk : structList)
             sb.append(baseChunk);

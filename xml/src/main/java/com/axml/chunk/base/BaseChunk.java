@@ -10,14 +10,17 @@ import java.nio.ByteOrder;
  */
 public abstract class BaseChunk {
     public final int ChunkStartPosition;
-    public final int chunkType;
+
+    public final short chunkType;
+    public final short headerSize;
     public int chunkSize;
 
     public BaseChunk(ByteBuffer byteBuffer) {
-        byteBuffer.position(byteBuffer.position() - 4);
+        byteBuffer.position(byteBuffer.position() - 2);
         ChunkStartPosition = byteBuffer.position();
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        this.chunkType = byteBuffer.getInt();
+        this.chunkType = byteBuffer.getShort();
+        this.headerSize = byteBuffer.getShort();
         this.chunkSize = byteBuffer.getInt();
     }
 
@@ -30,7 +33,8 @@ public abstract class BaseChunk {
         this.chunkSize = bytes.length + 8;
         ByteBuffer byteBuffer = ByteBuffer.allocate(8 + bytes.length);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byteBuffer.putInt(this.chunkType);
+        byteBuffer.putShort(this.chunkType);
+        byteBuffer.putShort(this.headerSize);
         byteBuffer.putInt(this.chunkSize);
         byteBuffer.put(bytes);
         return byteBuffer.array();
