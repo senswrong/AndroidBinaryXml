@@ -1,12 +1,12 @@
 package com.axml.chunk;
 
 import com.axml.chunk.base.BaseChunk;
-import common.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +30,9 @@ public class StringChunk extends BaseChunk {
         super(byteBuffer);
         this.stringCount = byteBuffer.getInt();
         this.styleCount = byteBuffer.getInt();
-        this.isUTF8 = byteBuffer.getShort() == 1;
-        this.isSorted = byteBuffer.getShort() == 1;
+        //utf8(0x0100) or default utf16le(0x0000)
+        this.isUTF8 = byteBuffer.getShort() != 0;
+        this.isSorted = byteBuffer.getShort() != 0;
         this.stringStart = byteBuffer.getInt();
         this.styleStart = byteBuffer.getInt();
 
@@ -47,25 +48,40 @@ public class StringChunk extends BaseChunk {
 
         for (int i = 0; i < stringCount; i++) {
             byteBuffer.position(ChunkStartPosition + stringStart + stringOffsets[i]);
-            char length = byteBuffer.getChar();
-            char[] string = new char[length];
-            for (char j = 0; j < length; j++)
-                string[j] = byteBuffer.getChar();
-            stringList.add(new String(string));
+            int byteCount;
+            if (isUTF8) {
+                byte strCount = byteBuffer.get();
+                byteCount = byteBuffer.get();
+            } else
+                byteCount = byteBuffer.getShort() * 2;
+
+            byte[] string = new byte[byteCount];
+            byteBuffer.get(string);
+            if (isUTF8) stringList.add(new String(string, StandardCharsets.UTF_8));
+            else stringList.add(new String(string, StandardCharsets.UTF_16LE));
         }
         //styleCount always = 0  [skip]
         byteBuffer.position(ChunkStartPosition + chunkSize);
     }
 
     private void stringToBytes(ByteArrayOutputStream stream, String str) throws IOException {
-        if (str == null) return;
-        ByteBuffer byteBuffer = ByteBuffer.allocate(4 + str.length() * 2);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        byteBuffer.putChar((char) str.length());
-        char[] charArray = str.toCharArray();
-        for (char c : charArray)
-            byteBuffer.putChar(c);
-        byteBuffer.putChar('\0');
+        ByteBuffer byteBuffer;
+        if (isUTF8) {
+            byte[] chars = str.getBytes(StandardCharsets.UTF_8);
+            byteBuffer = ByteBuffer.allocate(2 + chars.length + 1);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            byteBuffer.put((byte) str.length());
+            byteBuffer.put((byte) chars.length);
+            byteBuffer.put(chars);
+            byteBuffer.put((byte) 0);
+        } else {
+            byte[] chars = str.getBytes(StandardCharsets.UTF_16LE);
+            byteBuffer = ByteBuffer.allocate(2 + chars.length + 2);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            byteBuffer.putShort((short) str.length());
+            byteBuffer.put(chars);
+            byteBuffer.putShort((short) 0);
+        }
         stream.write(byteBuffer.array());
     }
 
@@ -80,8 +96,10 @@ public class StringChunk extends BaseChunk {
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byteBuffer.putInt(stringCount);
         byteBuffer.putInt(styleCount);
+        byteBuffer.order(ByteOrder.BIG_ENDIAN);
         byteBuffer.putShort((short) (isUTF8 ? 1 : 0));
         byteBuffer.putShort((short) (isSorted ? 1 : 0));
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byteBuffer.putInt(stringStart);
         byteBuffer.putInt(styleStart);
         int stringOffset = 0;
@@ -90,7 +108,10 @@ public class StringChunk extends BaseChunk {
         for (int i = 0; i < stringCount; i++) {
             stringOffsets[i] = stringOffset;
             byteBuffer.putInt(stringOffset);
-            stringOffset += 4 + stringList.get(i).length() * 2;
+            if (isUTF8)
+                stringOffset += 3 + stringList.get(i).getBytes(StandardCharsets.UTF_8).length;
+            else
+                stringOffset += 4 + stringList.get(i).getBytes(StandardCharsets.UTF_16LE).length;
         }
         //styleCount always = 0  [skip]
         for (int offset : styleOffsets) byteBuffer.putInt(offset);

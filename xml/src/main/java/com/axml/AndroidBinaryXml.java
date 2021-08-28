@@ -17,7 +17,7 @@ import java.util.List;
  * Created by Sens on 2021/8/27.
  * {@see <a href="https://github.com/senswrong/AndroidManifest">AndroidManifest</a>}
  */
-public class AndroidManifest {
+public class AndroidBinaryXml {
     public short fileType;
     public short headerSize;
     public int fileSize;
@@ -25,11 +25,11 @@ public class AndroidManifest {
     public ResourceChunk resourceChunk;
     public List<BaseChunk> structList = new ArrayList();
 
-    public AndroidManifest(File androidManifest) {
+    public AndroidBinaryXml(File androidManifest) {
         this(FileUtils.getFileData(androidManifest));
     }
 
-    public AndroidManifest(byte[] datas) {
+    public AndroidBinaryXml(byte[] datas) {
         int available = datas.length;
         ByteBuffer byteBuffer = ByteBuffer.wrap(datas);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -84,9 +84,15 @@ public class AndroidManifest {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (BaseChunk baseChunk : structList)
+        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+        boolean hasXmlns = false;
+        for (BaseChunk baseChunk : structList) {
+            if (!hasXmlns && baseChunk instanceof StartTagChunk) {
+                ((StartTagChunk) baseChunk).addXmlns();
+                hasXmlns = true;
+            }
             sb.append(baseChunk);
+        }
         return sb.toString();
     }
 }

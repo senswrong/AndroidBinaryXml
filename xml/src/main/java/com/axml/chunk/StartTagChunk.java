@@ -106,17 +106,21 @@ public class StartTagChunk extends BaseContentChunk {
         return null;
     }
 
+    private boolean addxmlns = false;
+
+    public void addXmlns() {
+        addxmlns = true;
+    }
+
     @Override
     public String toString() {
         StringBuilder tagBuilder = new StringBuilder();
         if (comment > -1) tagBuilder.append("<!--").append(getString(comment)).append("-->").append("\n");
         tagBuilder.append('<');
-        //always = -1
-        if (namespaceUri > -1) tagBuilder.append(getPrefix(namespaceUri)).append(":");
 
         String tagName = getString(name);
         tagBuilder.append(tagName);
-        if (namespaceChunkList != null && "manifest".equals(tagName))//add namespace
+        if (addxmlns && namespaceChunkList != null)//add namespace
             for (NamespaceChunk namespaceChunk : namespaceChunkList)
                 tagBuilder.append(" ").append("xmlns:").append(getString(namespaceChunk.prefix)).append("=\"").append(getString(namespaceChunk.uri)).append('"');
 

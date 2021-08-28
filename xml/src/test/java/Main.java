@@ -1,4 +1,4 @@
-import com.axml.AndroidManifest;
+import com.axml.AndroidBinaryXml;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,12 +12,11 @@ public class Main {
         File file = new File(args[0]);
         System.out.println("file->" + file);
 
-        AndroidManifest androidManifest = new AndroidManifest(file);
-        System.out.println("manifest done");
+        AndroidBinaryXml androidBinaryXml = new AndroidBinaryXml(file);
 
-        byte[] datas = androidManifest.toBytes();
+        byte[] datas = androidBinaryXml.toBytes();
 
-        AndroidManifest manifest = new AndroidManifest(datas);
+        AndroidBinaryXml manifest = new AndroidBinaryXml(datas);
         System.out.println(manifest);
     }
 }

@@ -34,12 +34,6 @@ public class NamespaceChunk extends BaseContentChunk {
 
     @Override
     public String toString() {
-        if (chunkType == ChunkType.CHUNK_START_NAMESPACE.TYPE) {
-            StringBuilder tagBuilder = new StringBuilder();
-            if (comment > -1) tagBuilder.append("<!--").append(getString(comment)).append("-->").append("\n");
-            tagBuilder.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-            return tagBuilder.toString();
-        }
         return "";
     }
 }
