@@ -32,7 +32,6 @@ public class EndTagChunk extends BaseContentChunk {
         stream.write(byteBuffer.array());
     }
 
-
     @Override
     public String toString() {
         return "</" + getString(name) + ">\n";

@@ -1,7 +1,6 @@
 package com.axml.chunk;
 
 import com.axml.chunk.base.BaseContentChunk;
-import com.axml.chunk.base.ChunkType;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,6 +29,10 @@ public class NamespaceChunk extends BaseContentChunk {
         byteBuffer.putInt(this.prefix);
         byteBuffer.putInt(this.uri);
         stream.write(byteBuffer.array());
+    }
+
+    public String getXmlNameSpace() {
+        return new StringBuilder().append("xmlns:").append(getString(prefix)).append("=\"").append(getString(uri)).append('"').toString();
     }
 
     @Override

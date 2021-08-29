@@ -37,5 +37,4 @@ public class BaseContentChunk extends BaseChunk {
         if (index == -1) return "";
         return stringChunk.getString(index);
     }
-
 }

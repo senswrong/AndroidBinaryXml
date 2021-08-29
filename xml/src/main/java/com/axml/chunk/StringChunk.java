@@ -64,6 +64,10 @@ public class StringChunk extends BaseChunk {
         byteBuffer.position(ChunkStartPosition + chunkSize);
     }
 
+    public String getString(int index) {
+        return stringList.get(index);
+    }
+
     private void stringToBytes(ByteArrayOutputStream stream, String str) throws IOException {
         ByteBuffer byteBuffer;
         if (isUTF8) {
@@ -83,10 +87,6 @@ public class StringChunk extends BaseChunk {
             byteBuffer.putShort((short) 0);
         }
         stream.write(byteBuffer.array());
-    }
-
-    public String getString(int index) {
-        return stringList.get(index);
     }
 
     @Override

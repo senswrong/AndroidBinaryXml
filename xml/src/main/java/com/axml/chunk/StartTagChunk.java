@@ -26,7 +26,6 @@ public class StartTagChunk extends BaseContentChunk {
     public short styleIndex;
 
     public List<Attribute> attributes;
-    protected final List<NamespaceChunk> namespaceChunkList;
 
     public StartTagChunk(ByteBuffer byteBuffer, StringChunk stringChunk, List<NamespaceChunk> namespaceChunkList) {
         super(byteBuffer, stringChunk);
@@ -99,11 +98,22 @@ public class StartTagChunk extends BaseContentChunk {
             attribute.toBytes(stream);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    protected final List<NamespaceChunk> namespaceChunkList;
+
     protected String getPrefix(int uri) {
         for (NamespaceChunk namespaceChunk : namespaceChunkList)
             if (namespaceChunk.uri == uri)
                 return getString(namespaceChunk.prefix);
         return null;
+    }
+
+    protected String getNameSpace() {
+        StringBuilder nsBuilder = new StringBuilder();
+        if (namespaceChunkList != null)//add namespace
+            for (NamespaceChunk namespaceChunk : namespaceChunkList)
+                nsBuilder.append(" ").append(namespaceChunk.getXmlNameSpace());
+        return nsBuilder.toString();
     }
 
     private boolean addxmlns = false;
@@ -120,9 +130,8 @@ public class StartTagChunk extends BaseContentChunk {
 
         String tagName = getString(name);
         tagBuilder.append(tagName);
-        if (addxmlns && namespaceChunkList != null)//add namespace
-            for (NamespaceChunk namespaceChunk : namespaceChunkList)
-                tagBuilder.append(" ").append("xmlns:").append(getString(namespaceChunk.prefix)).append("=\"").append(getString(namespaceChunk.uri)).append('"');
+
+        if (addxmlns) tagBuilder.append(getNameSpace());
 
         for (Attribute attribute : attributes) {
             tagBuilder.append(" ");
