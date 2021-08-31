@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * Created by Sens on 2021/8/27.
- * {@see <a href="https://github.com/senswrong/AndroidManifest">AndroidManifest</a>}
+ * {@see <a href="https://github.com/senswrong/AndroidBinaryXml">AndroidBinaryXml</a>}
  */
 public class AndroidBinaryXml {
     public short fileType;
