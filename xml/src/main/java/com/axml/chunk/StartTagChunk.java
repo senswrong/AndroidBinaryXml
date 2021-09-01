@@ -51,8 +51,8 @@ public class StartTagChunk extends BaseContentChunk {
         public final int name;
         public final int value;
         public final short structureSize;
-        public final byte Res0;
-        public final byte type;
+        public final int Res0;
+        public final int type;
         public final int data;
 
         public Attribute(ByteBuffer byteBuffer) {
@@ -60,8 +60,8 @@ public class StartTagChunk extends BaseContentChunk {
             name = byteBuffer.getInt();
             value = byteBuffer.getInt();
             structureSize = byteBuffer.getShort();
-            Res0 = byteBuffer.get();
-            type = byteBuffer.get();
+            Res0 = byteBuffer.get() & 0xFF;
+            type = byteBuffer.get() & 0xFF;
             data = byteBuffer.getInt();
         }
 
@@ -72,8 +72,8 @@ public class StartTagChunk extends BaseContentChunk {
             byteBuffer.putInt(name);
             byteBuffer.putInt(value);
             byteBuffer.putShort(structureSize);
-            byteBuffer.put(Res0);
-            byteBuffer.put(type);
+            byteBuffer.put((byte) Res0);
+            byteBuffer.put((byte) type);
             byteBuffer.putInt(data);
             stream.write(byteBuffer.array());
         }

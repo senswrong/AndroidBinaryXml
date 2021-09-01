@@ -50,8 +50,8 @@ public class StringChunk extends BaseChunk {
             byteBuffer.position(ChunkStartPosition + stringStart + stringOffsets[i]);
             int byteCount;
             if (isUTF8) {
-                byte strCount = byteBuffer.get();
-                byteCount = byteBuffer.get();
+                int strCount = byteBuffer.get() & 0xFF;
+                byteCount = byteBuffer.get() & 0xFF;
             } else
                 byteCount = byteBuffer.getShort() * 2;
 
