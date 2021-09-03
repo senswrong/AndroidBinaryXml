@@ -1,3 +1,4 @@
+GOTO[CSDN](https://blog.csdn.net/song6974272/article/details/119991751)
 ![image](https://raw.githubusercontent.com/senswrong/AndroidBinaryXml/main/AndroidBinaryXml.png)
 
 <p align="center">
@@ -13,3 +14,4 @@
     <img src="https://raw.githubusercontent.com/senswrong/AndroidBinaryXml/main/alipay.png">
     <img src="https://raw.githubusercontent.com/senswrong/AndroidBinaryXml/main/wechatpay.png">
 </p>
+
